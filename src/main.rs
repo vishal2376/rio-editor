@@ -73,9 +73,26 @@ impl Application for Editor {
     }
 }
 
-async fn load_file(path: impl AsRef<Path>) -> Result<Arc<String>, io::ErrorKind> {
+async fn pick_file() -> Result<Arc<String>, Error> {
+    let handle = rfd::AsyncFileDialog::new()
+        .set_title("Choose a text file")
+        .pick_file()
+        .await
+        .ok_or(Error::DialogError)?;
+
+    load_file(handle.path()).await
+}
+
+async fn load_file(path: impl AsRef<Path>) -> Result<Arc<String>, Error> {
     tokio::fs::read_to_string(path)
         .await
         .map(Arc::new)
         .map_err(|error| error.kind())
+        .map_err(Error::IoError)
+}
+
+#[derive(Debug, Clone)]
+enum Error {
+    DialogError,
+    IoError(io::ErrorKind),
 }
