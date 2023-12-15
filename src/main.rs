@@ -1,6 +1,6 @@
 use iced::{
-    widget::{container, text_editor},
-    Sandbox, Settings,
+    widget::{column, container, horizontal_space, row, text, text_editor},
+    Length, Sandbox, Settings, Theme,
 };
 
 fn main() -> iced::Result {
@@ -21,7 +21,7 @@ impl Sandbox for Editor {
 
     fn new() -> Self {
         Editor {
-            content: text_editor::Content::new(),
+            content: text_editor::Content::with(include_str!("main.rs")),
         }
     }
 
@@ -40,6 +40,16 @@ impl Sandbox for Editor {
     fn view(&self) -> iced::Element<'_, Self::Message> {
         let input = text_editor(&self.content).on_edit(Message::Edit);
 
-        container(input).padding(20).into()
+        let position = {
+            let (line, col) = self.content.cursor_position();
+            text(format!("{}:{}", line + 1, col + 1))
+        };
+
+        let status_bar = row![horizontal_space(Length::Fill), position];
+        container(column![input, status_bar]).padding(20).into()
+    }
+
+    fn theme(&self) -> Theme {
+        Theme::Dark
     }
 }
