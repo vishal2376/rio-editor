@@ -32,7 +32,7 @@ impl Application for Editor {
                 content: text_editor::Content::new(),
             },
             Command::perform(
-                load_file(format!("{},src/main.rs", env!("CARGO_MANIFEST_DIR"))),
+                load_file(format!("{}/src/main.rs", env!("CARGO_MANIFEST_DIR"))),
                 Message::FileOpened,
             ),
         )
