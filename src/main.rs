@@ -36,12 +36,14 @@ impl Application for Editor {
         String::from("Rio Editor")
     }
 
-    fn update(&mut self, message: Self::Message) {
+    fn update(&mut self, message: Self::Message) -> Command<Message> {
         match message {
             Message::Edit(action) => {
                 self.content.edit(action);
             }
         }
+
+        Command::none()
     }
 
     fn view(&self) -> iced::Element<'_, Self::Message> {
