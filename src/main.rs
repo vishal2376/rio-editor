@@ -2,7 +2,7 @@ use std::{io, path::Path, sync::Arc};
 
 use iced::{
     executor,
-    widget::{column, container, horizontal_space, row, text, text_editor},
+    widget::{button, column, container, horizontal_space, row, text, text_editor},
     Application, Command, Length, Settings, Theme,
 };
 
@@ -12,13 +12,14 @@ fn main() -> iced::Result {
 
 struct Editor {
     content: text_editor::Content,
-    error: Option<io::ErrorKin>,
+    error: Option<Error>,
 }
 
 #[derive(Debug, Clone)]
 enum Message {
     Edit(text_editor::Action),
-    FileOpened(Result<Arc<String>, io::ErrorKind>),
+    Open,
+    FileOpened(Result<Arc<String>, Error>),
 }
 
 impl Application for Editor {
@@ -48,15 +49,23 @@ impl Application for Editor {
         match message {
             Message::Edit(action) => {
                 self.content.edit(action);
+                Command::none()
             }
-            Message::FileOpened(Ok(content)) => self.content = text_editor::Content::with(&content),
-            Message::FileOpened(Err(error)) => self.error = Some(error),
+            Message::FileOpened(Ok(content)) => {
+                self.content = text_editor::Content::with(&content);
+                Command::none()
+            }
+            Message::FileOpened(Err(error)) => {
+                self.error = Some(error);
+                Command::none()
+            }
+            Message::Open => Command::perform(pick_file(), Message::FileOpened),
         }
-
-        Command::none()
     }
 
     fn view(&self) -> iced::Element<'_, Self::Message> {
+        let controls = row![button("Open").on_press(Message::Open)];
+
         let input = text_editor(&self.content).on_edit(Message::Edit);
 
         let position = {
@@ -65,7 +74,10 @@ impl Application for Editor {
         };
 
         let status_bar = row![horizontal_space(Length::Fill), position];
-        container(column![input, status_bar]).padding(20).into()
+
+        container(column![controls, input, status_bar])
+            .padding(20)
+            .into()
     }
 
     fn theme(&self) -> Theme {
