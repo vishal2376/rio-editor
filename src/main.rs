@@ -7,7 +7,7 @@ use std::{
 use iced::{
     executor,
     highlighter::{self, Highlighter},
-    theme,
+    keyboard, theme,
     widget::{
         button, column, container, horizontal_space, pick_list, row, text, text_editor, tooltip,
     },
@@ -111,6 +111,15 @@ impl Application for Editor {
                 Command::none()
             }
         }
+    }
+
+    fn subscription(&self) -> iced::Subscription<Self::Message> {
+        keyboard::on_key_press(|key_code, modifiers| match key_code {
+            keyboard::KeyCode::N if modifiers.command() => Some(Message::New),
+            keyboard::KeyCode::O if modifiers.command() => Some(Message::Open),
+            keyboard::KeyCode::S if modifiers.command() => Some(Message::Save),
+            _ => None,
+        })
     }
 
     fn view(&self) -> iced::Element<'_, Self::Message> {
