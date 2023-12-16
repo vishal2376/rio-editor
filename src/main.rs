@@ -5,13 +5,17 @@ use std::{
 };
 
 use iced::{
-    executor,
-    widget::{button, column, container, horizontal_space, row, text, text_editor},
-    Application, Command, Length, Settings, Theme,
+    executor, theme,
+    widget::{button, column, container, horizontal_space, row, text, text_editor, tooltip},
+    Application, Command, Element, Font, Length, Settings, Theme,
 };
 
 fn main() -> iced::Result {
-    Editor::run(Settings::default())
+    Editor::run(Settings {
+        default_font: Font::MONOSPACE,
+        fonts: vec![include_bytes!("../fonts/rio-icons.ttf").as_slice().into()],
+        ..Settings::default()
+    })
 }
 
 struct Editor {
@@ -93,10 +97,11 @@ impl Application for Editor {
 
     fn view(&self) -> iced::Element<'_, Self::Message> {
         let controls = row![
-            button("New").on_press(Message::New),
-            button("Open").on_press(Message::Open),
-            button("Save").on_press(Message::Save)
-        ];
+            action(new_icon(), "New File", Message::New),
+            action(load_icon(), "Open File", Message::Open),
+            action(save_icon(), "Save File", Message::Save)
+        ]
+        .spacing(10);
 
         let input = text_editor(&self.content).on_edit(Message::Edit);
 
@@ -126,6 +131,40 @@ impl Application for Editor {
     fn theme(&self) -> Theme {
         Theme::Dark
     }
+}
+
+fn action<'a>(
+    content: Element<'a, Message>,
+    label: &str,
+    on_press: Message,
+) -> Element<'a, Message> {
+    tooltip(
+        button(container(content).width(30).center_x())
+            .on_press(on_press)
+            .padding([5, 10]),
+        label,
+        tooltip::Position::FollowCursor,
+    )
+    .style(theme::Container::Box)
+    .into()
+}
+
+fn new_icon<'a>() -> Element<'a, Message> {
+    icon('\u{E800}')
+}
+
+fn save_icon<'a>() -> Element<'a, Message> {
+    icon('\u{E801}')
+}
+
+fn load_icon<'a>() -> Element<'a, Message> {
+    icon('\u{F115}')
+}
+
+fn icon<'a>(codepoint: char) -> Element<'a, Message> {
+    const ICON_FONT: Font = Font::with_name("rio-icons");
+
+    text(codepoint).font(ICON_FONT).into()
 }
 
 fn default_file() -> PathBuf {
