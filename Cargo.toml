@@ -6,6 +6,6 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-iced = { git="https://github.com/iced-rs/iced.git", rev = "refs/tags/text-editor"}
+iced = { git="https://github.com/iced-rs/iced.git", rev = "refs/tags/text-editor",features = ["debug","tokio","highlighter"]}
 rfd = "0.12.1"
 tokio = { version = "1.35.0", features = ["fs"] }
