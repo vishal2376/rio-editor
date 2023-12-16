@@ -27,6 +27,7 @@ struct Editor {
     error: Option<Error>,
     path: Option<PathBuf>,
     theme: highlighter::Theme,
+    is_dirty: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -53,6 +54,7 @@ impl Application for Editor {
                 error: None,
                 path: None,
                 theme: highlighter::Theme::SolarizedDark,
+                is_dirty: true,
             },
             Command::perform(load_file(default_file()), Message::FileOpened),
         )
@@ -65,13 +67,15 @@ impl Application for Editor {
     fn update(&mut self, message: Self::Message) -> Command<Message> {
         match message {
             Message::Edit(action) => {
-                self.content.edit(action);
+                self.is_dirty = self.is_dirty || action.is_edit();
                 self.error = None;
+                self.content.edit(action);
                 Command::none()
             }
 
             Message::New => {
                 self.path = None;
+                self.is_dirty = true;
                 self.content = text_editor::Content::new();
                 Command::none()
             }
@@ -79,6 +83,7 @@ impl Application for Editor {
             Message::Open => Command::perform(pick_file(), Message::FileOpened),
             Message::FileOpened(Ok((path, content))) => {
                 self.path = Some(path);
+                self.is_dirty = false;
                 self.content = text_editor::Content::with(&content);
                 Command::none()
             }
@@ -93,6 +98,7 @@ impl Application for Editor {
             }
             Message::FileSaved(Ok(path)) => {
                 self.path = Some(path);
+                self.is_dirty = false;
                 Command::none()
             }
             Message::FileSaved(Err(error)) => {
@@ -109,9 +115,13 @@ impl Application for Editor {
 
     fn view(&self) -> iced::Element<'_, Self::Message> {
         let controls = row![
-            action(new_icon(), "New File", Message::New),
-            action(load_icon(), "Open File", Message::Open),
-            action(save_icon(), "Save File", Message::Save),
+            action(new_icon(), "New File", Some(Message::New)),
+            action(load_icon(), "Open File", Some(Message::Open)),
+            action(
+                save_icon(),
+                "Save File",
+                self.is_dirty.then_some(Message::Save)
+            ),
             horizontal_space(Length::Fill),
             pick_list(
                 highlighter::Theme::ALL,
@@ -160,19 +170,30 @@ impl Application for Editor {
     }
 
     fn theme(&self) -> Theme {
-        Theme::Dark
+        if self.theme.is_dark() {
+            Theme::Dark
+        } else {
+            Theme::Light
+        }
     }
 }
 
 fn action<'a>(
     content: Element<'a, Message>,
     label: &str,
-    on_press: Message,
+    on_press: Option<Message>,
 ) -> Element<'a, Message> {
+    let is_disabled = on_press.is_none();
+
     tooltip(
         button(container(content).width(30).center_x())
-            .on_press(on_press)
-            .padding([5, 10]),
+            .on_press_maybe(on_press)
+            .padding([5, 10])
+            .style(if is_disabled {
+                theme::Button::Secondary
+            } else {
+                theme::Button::Primary
+            }),
         label,
         tooltip::Position::FollowCursor,
     )
